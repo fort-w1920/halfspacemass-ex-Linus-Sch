@@ -2,24 +2,21 @@ normalize <- function(x) {
   x / sqrt(sum(x ^ 2))
 }
 
-norm_vec <- function(x) sqrt(sum(x^2))
+norm_vec <- function(x)
+  sqrt(sum(x ^ 2))
 
 sample_direction <- function(dimension) {
   coords <- rnorm(dimension)#runif(dimension)
   while (all(coords == 0)) {
     coords <- runif(dimension)
   }
-  #runif draws from [0,1] but the directions might point to any quadrant
-  #signs <- as.numeric(runif(dimension) < 0.5)
-  #signs <- replace(signs, signs == 0, -1)
-  #normalize(coords * signs)
   normalize(coords)
 }
 
 get_subsample <- function(data, subsample) {
   n <- subsample * dim(data)[[1]]
   #sample(data, n, replace = FALSE)
-  data[sample(nrow(data), n, replace = FALSE), ]
+  data[sample(nrow(data), n, replace = FALSE),]
 }
 
 project_df <- function(vector, points) {
@@ -54,22 +51,37 @@ train_depth <-
       sample_points <- get_subsample(data, subsample)
       projections <- project_df(direction, sample_points)
       split_point <- get_split_point(projections, scope)
-      mean_left <- sum(projections < split_point) / dim(sample_points)[[1]]
-      mean_right <- sum(projections >= split_point) / dim(sample_points)[[1]]
+      mean_left <-
+        sum(projections < split_point) / dim(sample_points)[[1]]
+      mean_right <-
+        sum(projections >= split_point) / dim(sample_points)[[1]]
       
-      directions[iteration, ] <- direction
+      directions[iteration,] <- direction
       split_points[iteration] <- split_point
-      means[iteration, ] <- c(mean_left, mean_right)
+      means[iteration,] <- c(mean_left, mean_right)
     }
-    list("data" = data, "directions" = directions, "split_points" = split_points, "means" = means, "number" = n_halfspace)
+    list(
+      "data" = data,
+      "directions" = directions,
+      "split_points" = split_points,
+      "means" = means,
+      "number" = n_halfspace
+    )
   }
 
-update_mass <- function(masses, projections, split_point, mean_smaller, mean_greater) {
-  projection_smaller_split <- projections < split_point
-  masses[projection_smaller_split] <- masses[projection_smaller_split] + mean_smaller
-  masses[!projection_smaller_split] <- masses[!projection_smaller_split] + mean_greater
-  masses
-}
+update_mass <-
+  function(masses,
+           projections,
+           split_point,
+           mean_smaller,
+           mean_greater) {
+    projection_smaller_split <- projections < split_point
+    masses[projection_smaller_split] <-
+      masses[projection_smaller_split] + mean_smaller
+    masses[!projection_smaller_split] <-
+      masses[!projection_smaller_split] + mean_greater
+    masses
+  }
 
 update_depth <- function(depths, projections, projections_z) {
   for (i in seq_len(length(projections))) {
@@ -83,17 +95,25 @@ evaluate_depth <- function(data, halfspaces, metric = "mass") {
   if (metric == "mass") {
     measures <- replicate(dim(data)[[1]], 0)
     for (iteration in seq_len(halfspaces$number)) {
-      projections <- project_df(halfspaces$directions[iteration, ], data)
-      measures <- update_mass(measures, projections, halfspaces$split_points[iteration], halfspaces$means[iteration, 1], halfspaces$means[iteration, 2])
+      projections <- project_df(halfspaces$directions[iteration,], data)
+      measures <-
+        update_mass(
+          measures,
+          projections,
+          halfspaces$split_points[iteration],
+          halfspaces$means[iteration, 1],
+          halfspaces$means[iteration, 2]
+        )
     }
     measures <- measures / halfspaces$number
   } else {
     measures <- replicate(dim(data)[[1]], .Machine$double.xmax)
     for (iteration in seq_len(halfspaces$number)) {
-      projections <- project_df(halfspaces$directions[iteration, ], data)
-      projections_z <- project_df(halfspaces$directions[iteration, ], halfspaces$data)
+      projections <- project_df(halfspaces$directions[iteration,], data)
+      projections_z <-
+        project_df(halfspaces$directions[iteration,], halfspaces$data)
       measures <- update_depth(measures, projections, projections_z)
     }
   }
-  measures 
+  measures
 }
