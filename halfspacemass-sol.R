@@ -8,7 +8,7 @@ norm_vec <- function(x)
 sample_direction <- function(dimension) {
   coords <- rnorm(dimension)#runif(dimension)
   while (all(coords == 0)) {
-    coords <- runif(dimension)
+    coords <- rnorm(dimension)
   }
   normalize(coords)
 }
