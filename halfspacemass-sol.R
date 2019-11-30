@@ -5,14 +5,15 @@ normalize <- function(x) {
 norm_vec <- function(x) sqrt(sum(x^2))
 
 sample_direction <- function(dimension) {
-  coords <- runif(dimension)
+  coords <- rnorm(dimension)#runif(dimension)
   while (all(coords == 0)) {
     coords <- runif(dimension)
   }
   #runif draws from [0,1] but the directions might point to any quadrant
-  signs <- as.numeric(runif(dimension) < 0.5)
-  signs <- replace(signs, signs == 0, -1)
-  normalize(coords * signs)
+  #signs <- as.numeric(runif(dimension) < 0.5)
+  #signs <- replace(signs, signs == 0, -1)
+  #normalize(coords * signs)
+  normalize(coords)
 }
 
 get_subsample <- function(data, subsample) {
@@ -22,7 +23,12 @@ get_subsample <- function(data, subsample) {
 }
 
 project_df <- function(vector, points) {
-  rowSums(points * vector)
+  #rowSums(points * vector)
+  rowSums(t(t(as.matrix(points)) * vector))
+}
+
+mag <- function(vec) {
+  sqrt(sum(vec**2))
 }
 
 get_split_point <- function(projections, scope) {
@@ -62,22 +68,33 @@ train_depth <-
     list("directions" = directions, "split_points" = split_points, "means" = means, "number" = n_halfspace)
   }
 
+update_mass <- function(masses, projections, split_point, mean_smaller, mean_greater) {
+  projection_smaller_split <- projections < split_point
+  masses[projection_smaller_split] <- masses[projection_smaller_split] + mean_smaller
+  masses[!projection_smaller_split] <- masses[!projection_smaller_split] + mean_greater
+  masses
+}
+
+update_depth <- function(depths, projections, means_smaller) {
+  depths <- pmin(depths, means_smaller)
+  depths
+}
+
 evaluate_depth <- function(data, halfspaces, metric = "mass") {
   if (metric == "mass") {
     measures <- replicate(dim(data)[[1]], 0)
     for (iteration in seq_len(halfspaces$number)) {
       projections <- project_df(halfspaces$directions[iteration, ], data)
-      projection_smaller_split <- projections < halfspaces$split_points[iteration]
-      measures[projection_smaller_split] <- measures[projection_smaller_split] + halfspaces$means[iteration, 1]
-      measures[!projection_smaller_split] <- measures[!projection_smaller_split] + halfspaces$means[iteration, 2]
+      measures <- update_mass(measures, projections, halfspaces$split_points[iteration], halfspaces$means[iteration, 1], halfspaces$means[iteration, 2])
     }
+    measures <- measures / halfspaces$number
   } else {
     measures <- replicate(dim(data)[[1]], .Machine$double.xmax)
     for (iteration in seq_len(halfspaces$number)) {
       projections <- project_df(halfspaces$directions[iteration, ], data)
       #this is wrong, compute min over all directions w.r.t. the number of projections >= 0
-      measures <- pmin(measures, projections)
+      measures <- pmin(measures, projections, halfspaces$means[iteration, 1])
     }
   }
-  measures / halfspaces$number
+  measures 
 }

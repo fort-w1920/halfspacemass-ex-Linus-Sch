@@ -51,7 +51,7 @@ plot_depth <- function(halfspaces, data, grid = NULL, points = TRUE,
 
 
 #################################
-#######check Fig. 5
+#######check Fig. 3
 #################################
 
 data_fig3 <- data.frame(z1 = c(-2, -.5, .5, 2), z2 = 0)
@@ -65,12 +65,12 @@ depth_fig3_scope15 <- train_depth(data_fig3,
                                   n_halfspace = 1e3, scope = 1.5,
                                   seed = 4163)
 gridExtra::grid.arrange(
-  #plot_depth(depth_fig3_scope15,
-  #           data = data_fig3, grid = grid_fig3,
-  #           metric = "depth") +
-  #  ggtitle("Tukey Halfspace Depth"),
-  plot_depth(depth_fig3, data = data_fig3, grid = grid_fig3) +
-    ggtitle("Halfspace Mass (Chen et al.)"),
+  plot_depth(depth_fig3_scope15,
+             data = data_fig3, grid = grid_fig3,
+             metric = "depth") +
+    ggtitle("Tukey Halfspace Depth"),
+  #plot_depth(depth_fig3, data = data_fig3, grid = grid_fig3) +
+  #  ggtitle("Halfspace Mass (Chen et al.)"),
   plot_depth(depth_fig3, data = data_fig3, grid = grid_fig3) +
     ggtitle("Halfspace Mass (Chen et al.)"),
   nrow = 1
