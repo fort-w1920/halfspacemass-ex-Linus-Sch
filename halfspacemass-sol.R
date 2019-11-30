@@ -27,10 +27,6 @@ project_df <- function(vector, points) {
   rowSums(t(t(as.matrix(points)) * vector))
 }
 
-mag <- function(vec) {
-  sqrt(sum(vec**2))
-}
-
 get_split_point <- function(projections, scope) {
   max_projection <- max(projections)
   min_projection <- min(projections)
@@ -65,7 +61,7 @@ train_depth <-
       split_points[iteration] <- split_point
       means[iteration, ] <- c(mean_left, mean_right)
     }
-    list("directions" = directions, "split_points" = split_points, "means" = means, "number" = n_halfspace)
+    list("data" = data, "directions" = directions, "split_points" = split_points, "means" = means, "number" = n_halfspace)
   }
 
 update_mass <- function(masses, projections, split_point, mean_smaller, mean_greater) {
@@ -75,8 +71,11 @@ update_mass <- function(masses, projections, split_point, mean_smaller, mean_gre
   masses
 }
 
-update_depth <- function(depths, projections, means_smaller) {
-  depths <- pmin(depths, means_smaller)
+update_depth <- function(depths, projections, projections_z) {
+  for (i in seq_len(length(projections))) {
+    num_greater <- sum(projections_z > projections[i])
+    depths[i] <- min(depths[i], num_greater)
+  }
   depths
 }
 
@@ -92,8 +91,8 @@ evaluate_depth <- function(data, halfspaces, metric = "mass") {
     measures <- replicate(dim(data)[[1]], .Machine$double.xmax)
     for (iteration in seq_len(halfspaces$number)) {
       projections <- project_df(halfspaces$directions[iteration, ], data)
-      #this is wrong, compute min over all directions w.r.t. the number of projections >= 0
-      measures <- pmin(measures, projections, halfspaces$means[iteration, 1])
+      projections_z <- project_df(halfspaces$directions[iteration, ], halfspaces$data)
+      measures <- update_depth(measures, projections, projections_z)
     }
   }
   measures 
