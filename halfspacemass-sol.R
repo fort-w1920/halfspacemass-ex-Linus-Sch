@@ -67,6 +67,7 @@ train_depth <-
     directions <- matrix(nrow = n_halfspace, ncol = dimensionality)
     split_points <- vector(mode = "numeric", length = n_halfspace)
     means <- matrix(nrow = n_halfspace, ncol = 2)
+    proj <- matrix(nrow = n_halfspace, ncol = subsample * dim(data)[[1]])
     
     for (iteration in seq_len(n_halfspace)) {
       direction <- sample_direction(dimension = dimensionality)
@@ -80,13 +81,15 @@ train_depth <-
       directions[iteration,] <- direction
       split_points[iteration] <- split_point
       means[iteration,] <- c(mean_left, mean_right)
+      proj[iteration, ] <- projections
     }
     list(
       "data" = data,
       "directions" = directions,
       "split_points" = split_points,
       "means" = means,
-      "number" = n_halfspace
+      "number" = n_halfspace,
+      "projections" = proj
     )
   }
 
@@ -154,9 +157,10 @@ evaluate_depth <- function(data, halfspaces, metric = c("mass", "depth")) {
   if (metric == "depth") {
     measures <- replicate(dim(data)[[1]], .Machine$double.xmax)
     for (iteration in seq_len(halfspaces$number)) {
-      projections <- project_df(halfspaces$directions[iteration,], data)
-      projections_z <-
-        project_df(halfspaces$directions[iteration,], halfspaces$data)
+      projections <- project_df(halfspaces$directions[iteration, ], data)
+      #projections_z <-
+      #  project_df(halfspaces$directions[iteration,], halfspaces$data)
+      projections_z <- halfspaces$projections[iteration, ]
       measures <- update_depth(measures, projections, projections_z)
     }
   } 
