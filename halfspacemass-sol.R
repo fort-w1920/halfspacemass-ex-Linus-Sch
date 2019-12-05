@@ -15,14 +15,14 @@ sample_direction <- function(dimension) {
   normalize(coords)
 }
 
-#returns a subsample of the given data. The  subsample parameter gives the
+#returns a subsample of the given data. The subsample parameter gives the
 #fraction of the data that should be sampled (without replacement)
 get_subsample <- function(data, subsample) {
   assert_numeric(subsample)
-  assert(check_data_frame(data), check_matrix(data))
+  assert(check_data_frame(data), check_matrix(data), combine = "or")
   n <- subsample * dim(data)[[1]]
   #sample(data, n, replace = FALSE)
-  data[sample(nrow(data), n, replace = FALSE),]
+  data[sample(nrow(data), n, replace = FALSE), ]
 }
 
 #projects a dataframe/matrix of points onto a unit vector
@@ -40,8 +40,8 @@ get_split_point <- function(projections, scope) {
   max_projection <- max(projections)
   min_projection <- min(projections)
   mid_projection <- (max_projection + min_projection) / 2
-  diff = max_projection - min_projection
-  interval <- scope * 0.5 * diff
+  difference = max_projection - min_projection
+  interval <- scope * 0.5 * difference
   left_border <- mid_projection - interval
   right_border <- mid_projection + interval
   runif(1, min = left_border, max = right_border)
@@ -78,9 +78,9 @@ train_depth <-
       mean_left <- sum(projections < split_point) / n_subsample
       mean_right <- sum(projections >= split_point) / n_subsample
       
-      directions[iteration,] <- direction
+      directions[iteration, ] <- direction
       split_points[iteration] <- split_point
-      means[iteration,] <- c(mean_left, mean_right)
+      means[iteration, ] <- c(mean_left, mean_right)
       proj[iteration, ] <- projections
     }
     list(
@@ -134,7 +134,7 @@ update_depth <- function(depths, projections, projections_z) {
 #data contains the query points, halfspaces is the list obtained from
 #train_depth() and the metric has to be either mass or depth.
 evaluate_depth <- function(data, halfspaces, metric = c("mass", "depth")) {
-  assert(check_data_frame(data), check_matrix(data))
+  assert(check_data_frame(data), check_matrix(data), combine = "or")
   assert_list(halfspaces)
   assert_character(metric)
   metric <- match.arg(metric)
@@ -142,7 +142,7 @@ evaluate_depth <- function(data, halfspaces, metric = c("mass", "depth")) {
   if (metric == "mass") {
     measures <- replicate(dim(data)[[1]], 0)
     for (iteration in seq_len(halfspaces$number)) {
-      projections <- project_df(halfspaces$directions[iteration,], data)
+      projections <- project_df(halfspaces$directions[iteration, ], data)
       measures <-
         update_mass(
           measures,
